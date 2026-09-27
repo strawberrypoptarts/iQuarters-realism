@@ -55,6 +55,7 @@ public sealed partial class MainMenuController : UIViewController
         string name=hits.Where(h=>Visible(h.Node)).Select(h=>h.Node.Name??"").FirstOrDefault(n=>n.StartsWith("button_")||n is "itme" or "yes" or "no")??"";
         if(screen=="about"){Home();return;}
         if(name=="")return;Sound("sharedassets0.assets-131.wav");
+        if(screen=="graphics"){GraphicsTap(name);return;}
         if(screen=="resume") {if(name=="yes"){var saved=GameStorage.Load();if(saved!=null)Start(saved,false);else Home();}else if(name=="no"){GameStorage.ClearSaved();Home();}return;}
         if(screen=="clear") {if(name=="yes")GameStorage.ClearScores();if(name is "yes" or "no"){legacy.Find("ui_are_you_sure")!.Hidden=true;screen="scores";ScoreText();}return;}
         if(screen=="main") {

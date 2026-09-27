@@ -4,6 +4,10 @@
 
 This is an independent copy of the [native iQuarters reconstruction](https://github.com/strawberrypoptarts/iQuarters), starting from commit `4798e18`. It explores richer rendering while retaining the recovered gameplay, physics, levels, menus, animations, and audio. The original and web repositories are separate.
 
+## Game-style Graphics menu — 0.5.0
+
+Graphics now uses the recovered four-row SceneKit menu, original green button artwork, and original `npin`, `npout`, and button-press animation clips. Tap Quality, Antialias, or Lamp to cycle the saved setting; Done or the original back arrow returns home. Changes apply to the next game. New labels use outlined bold lettering; the original artwork and animations are reused, but the new label font is an approximation. Player-selection materials are restored before returning home.
+
 ## Performance and antialiasing — 0.4.0
 
 - Efficient removes bloom and vignette passes and halves shadow filtering from 8 to 4 samples. Native resolution, HDR tone mapping, all PBR maps, glass, and the lamp remain. Shadows may look slightly less soft.
@@ -46,7 +50,7 @@ HUD rendering remains separate from the gameplay effects. Timestamp-based flick 
 
 ## Install
 
-The experimental IPA is currently distributed locally, not as a public GitHub release. Building and packaging creates `dist/iQuarters-realism-0.4.0-ios15.ipa`.
+The experimental IPA is currently distributed locally, not as a public GitHub release. Building and packaging creates `dist/iQuarters-realism-0.5.0-ios15.ipa`.
 
 - iOS/iPadOS 15 or later, arm64.
 - App name: **iQuarters Realism**.

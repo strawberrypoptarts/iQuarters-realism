@@ -37,27 +37,64 @@ public sealed partial class MainMenuController
         float height=bottom-top;
         graphicsButton.Frame=new CGRect(left,bottom+height*.12f,right-left,height);
     }
+    readonly Dictionary<int,SCNGeometry> graphicsOriginals=new();
+    readonly Dictionary<string,UIImage> graphicsImages=new();
     void ShowGraphics()
     {
         if(screen!="main")return;
         Sound("sharedassets0.assets-131.wav");
-        var panel=UIAlertController.Create("Graphics",$"Current: {RealismRendering.Quality}\nAntialiasing: {RealismRendering.Antialiasing}\nOverhead lamp: {(RealismRendering.LampEnabled ? "On" : "Off")}\nChanges apply when you start or resume a game.",UIAlertControllerStyle.Alert);
-        void Choice(string title,string value)=>panel.AddAction(UIAlertAction.Create(title,UIAlertActionStyle.Default,_=>RealismRendering.Quality=value));
-        Choice("Automatic — recommended","auto");
-        Choice("Efficient — lighter effects","efficient");
-        Choice("Enhanced — full effects","enhanced");
-        panel.AddAction(UIAlertAction.Create(RealismRendering.LampEnabled ? "Turn lamp off" : "Turn lamp on",UIAlertActionStyle.Default,_=>RealismRendering.LampEnabled=!RealismRendering.LampEnabled));
-        panel.AddAction(UIAlertAction.Create("Antialiasing…",UIAlertActionStyle.Default,_=>panel.DismissViewController(true,ShowAntialiasing)));
-        panel.AddAction(UIAlertAction.Create("Done",UIAlertActionStyle.Cancel,null));
-        PresentViewController(panel,true,null);
+        legacy.Find("ui_about")!.Hidden=true;
+        Sequence(["hiscoreclick","playnowout"],()=>{
+            foreach(int id in new[]{210,213,216,219}) {
+                var node=legacy.Nodes[id];graphicsOriginals[id]=node.Geometry!;
+                node.Geometry=(SCNGeometry)node.Geometry!.Copy();
+                node.Geometry.Materials=node.Geometry.Materials.Select(m=>(SCNMaterial)m.Copy()).ToArray();
+            }
+            RefreshGraphicsLabels();
+            Sequence(["npin"],()=>screen="graphics");
+        });
     }
-    void ShowAntialiasing()
+    void RefreshGraphicsLabels()
     {
-        var panel=UIAlertController.Create("Antialiasing","Smooths object edges. Automatic uses 2× in Efficient and 4× in Enhanced. Higher settings cost more GPU time. Applies to the next game.",UIAlertControllerStyle.Alert);
-        foreach(var (title,value) in new[]{("Automatic — recommended","auto"),("Off — fastest","off"),("2× — balanced","2x"),("4× — smoother","4x")})
-            panel.AddAction(UIAlertAction.Create(title,UIAlertActionStyle.Default,_=>RealismRendering.Antialiasing=value));
-        panel.AddAction(UIAlertAction.Create("Cancel",UIAlertActionStyle.Cancel,null));
-        PresentViewController(panel,true,null);
+        string quality=RealismRendering.Quality switch {"efficient"=>"EFFICIENT","enhanced"=>"ENHANCED",_=>"AUTO"};
+        string aa=RealismRendering.Antialiasing.ToUpperInvariant();
+        foreach(var (id,label) in new[]{(210,"QUALITY\n"+quality),(213,"ANTIALIAS\n"+aa),(216,"LAMP\n"+(RealismRendering.LampEnabled?"ON":"OFF")),(219,"DONE")}) {
+            if(!graphicsImages.TryGetValue(label,out var image))graphicsImages[label]=image=GraphicsSettingImage(label);
+            legacy.Nodes[id].Geometry!.FirstMaterial!.Diffuse.Contents=image;
+        }
+    }
+    void GraphicsTap(string name)
+    {
+        if(name is "button_button_left" or "button_right_bk" or "button_player_04") {
+            Sequence([name=="button_player_04"?"npfourplayer":"npbackclick","npout"],()=>{
+                foreach(var (id,geometry) in graphicsOriginals)legacy.Nodes[id].Geometry=geometry;
+                graphicsOriginals.Clear();RealismRendering.ConfigureAntialiasing(display);Home();
+            });return;
+        }
+        string clip;
+        if(name=="button_player_01") {
+            RealismRendering.Quality=RealismRendering.Quality switch {"auto"=>"efficient","efficient"=>"enhanced",_=>"auto"};clip="nponeplayer";
+        }else if(name=="button_player_02") {
+            RealismRendering.Antialiasing=RealismRendering.Antialiasing switch {"auto"=>"off","off"=>"2x","2x"=>"4x",_=>"auto"};clip="nptwoplayer";
+        }else if(name=="button_player_03") {RealismRendering.LampEnabled=!RealismRendering.LampEnabled;clip="npthreeplayer";}
+        else return;
+        RefreshGraphicsLabels();Sequence([clip],()=>screen="graphics");
+    }
+    static UIImage GraphicsSettingImage(string label)
+    {
+        using var original=UIImage.FromFile(LegacyScene.Resource("textures/sharedassets0.assets-8.png"))!;
+        using var renderer=new UIGraphicsImageRenderer(new CGSize(256,64));
+        return renderer.CreateImage(_=>{
+            original.Draw(new CGRect(0,0,256,64));
+            // Extend the original blank green fill over the player label; preserve its bevel.
+            using var crop=original.CGImage!.WithImageInRect(new CGRect(20,18,2,29));
+            using var fill=UIImage.FromImage(crop!);fill.Draw(new CGRect(18,18,218,29));
+            using var text=new NSString(label);
+            var style=new NSMutableParagraphStyle {Alignment=UITextAlignment.Right};
+            var attrs=new UIStringAttributes {Font=UIFont.FromName("Arial-BoldMT",label.Contains('\n')?13:19)!,ForegroundColor=UIColor.White,
+                StrokeColor=UIColor.Black,StrokeWidth=-5,ParagraphStyle=style};
+            text.DrawString(new CGRect(120,label.Contains('\n')?17:21,110,34),attrs);
+        });
     }
     static UIImage GraphicsButtonImage()
     {
