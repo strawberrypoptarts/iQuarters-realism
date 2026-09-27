@@ -1,68 +1,52 @@
 # iQuarters Realism
 
-**An experimental graphics edition of iQuarters for iPhone and iPad, built in C# without Unity.**
+### 1.0
 
-This is an independent copy of the [native iQuarters reconstruction](https://github.com/strawberrypoptarts/iQuarters), starting from commit `4798e18`. It explores richer rendering while retaining the recovered gameplay, physics, levels, menus, animations, and audio. The original and web repositories are separate.
+The classic quarter-tossing game, rebuilt in C# for iPhone and iPad with richer materials, lighting, and shadows. No Unity required.
 
-## Game-style Graphics menu — 0.5.0
+Based on the [iQuarters reconstruction](https://github.com/strawberrypoptarts/iQuarters), this standalone edition keeps the recovered gameplay, physics, levels, animations, and audio while giving the playing field a new look. It installs alongside the original iQuarters.
 
-Graphics now uses the recovered four-row SceneKit menu, original green button artwork, and original `npin`, `npout`, and button-press animation clips. Tap Quality, Antialias, or Lamp to cycle the saved setting; Done or the original back arrow returns home. Changes apply to the next game. New labels use outlined bold lettering; the original artwork and animations are reused, but the new label font is an approximation. Player-selection materials are restored before returning home.
+## Features
 
-## Performance and antialiasing — 0.4.0
+- **Detailed surfaces:** custom wood and quarter textures with normal and roughness maps for grain, wear, and engraved detail.
+- **Physically based props:** material finishes for the bobblehead, flip phone, bottles, aircraft, lighters, stands, and other obstacles.
+- **Reflective glass:** transparent glass with highlights and environment reflections.
+- **Overhead lighting:** a default-on pendant lamp that casts shadows across the playing field, with a switch in Graphics.
+- **Scalable effects:** HDR lighting, with bloom and ambient occlusion in Enhanced mode and lighter rendering in Efficient mode.
+- **Smoother edges:** selectable antialiasing and texture filtering to reduce shimmer.
+- **Game-style settings:** original green menu artwork, background, slide transitions, and button-press animations.
+- **Modern displays:** native-resolution rendering and support for up to 120 Hz on compatible devices, with frame-rate-independent flick input and physics.
+- **Distinct identity:** a green-and-yellow app icon and separate app storage.
 
-- Efficient removes bloom and vignette passes and halves shadow filtering from 8 to 4 samples. Native resolution, HDR tone mapping, all PBR maps, glass, and the lamp remain. Shadows may look slightly less soft.
-- Leaving a screen explicitly stops its SceneKit render loops.
-- Graphics now offers Automatic, Off, 2×, and 4× antialiasing. The selected mode covers gameplay, HUD geometry, and menus when created. Automatic remains 2× for Efficient and 4× for Enhanced.
-- Trilinear mip filtering and 2× anisotropic filtering reduce texture shimmer at oblique angles.
-- These changes target older devices including iPhone 6s; no on-device frame-rate benchmark has been measured. Automatic or Efficient with Automatic antialiasing is the recommended starting point on 6s.
+## Graphics settings
 
-## Existing graphics
+Open **GRAPHICS** below **HIGH SCORES**. Tap a setting to cycle its value, then select **DONE** or **BACK**. Gameplay changes apply when starting or resuming a game.
 
-- Custom 1024px oak table albedo, normal, and roughness maps with natural grain, knots, and worn satin-varnish detail. These AI-assisted artist-style maps replace the rejected uniform procedural material. Table UVs use a planar layout; collision geometry is unchanged.
-- Custom quarter color, normal, and roughness maps add face detail, simulated engraving relief, and circulated-metal wear while retaining the original mesh and face layout.
-- A modeled overhead pendant lamp, enabled by default. Its warm spotlight casts filtered shadow-map shadows from the quarter and opaque obstacles.
-- **Graphics → Turn lamp off/on** saves the choice. It applies on the next game start/resume.
-- Enhanced uses a 2048px shadow map with 16 samples; Efficient uses 1024px with 4 samples. These are initial budgets, not device benchmark results.
-- Transparent glass keeps approximate contact shadows rather than casting opaque silhouettes. This is not ray-traced glass, transmission, or caustics.
-- A green-and-yellow version of the original-style silver-quarter icon, installed in every iPhone/iPad icon size.
-- Complete prop material profiles: painted-resin bobblehead/hula figures, metal/plastic/glass phone with lit screens, brass lighters, glass bottles and drinking bird, painted aircraft, wood-and-metal pendulum/ballista, leather check holder, and wood rotating stand.
-- New detailed phone and bobblehead atlases. Other props retain their authored color textures with differentiated PBR roughness, metalness, and clear coat. UI and background photographs retain their original rendering.
-- Glass now uses alpha-blended PBR shading. It remains an approximation without true transmission, refraction, or caustics.
+| Setting | Choices |
+| --- | --- |
+| Quality | Automatic, Efficient, Enhanced |
+| Antialiasing | Automatic, Off, 2×, 4× |
+| Lamp | On, Off |
 
-### Previous lighting improvements
+Automatic quality selects Enhanced on devices with at least 4 GiB of memory when Low Power Mode is off; otherwise it uses Efficient. Automatic antialiasing uses 2× in Efficient and 4× in Enhanced.
 
-- Rebalanced the recovered lights for the new materials after a desktop preview exposed severe highlight clipping in 0.1.0.
-- Added offline-generated wood normal/roughness maps and fine metal roughness variation.
-- Improved glass readability under the adjusted lighting.
-- Kept the IPA local at the owner's request; source changes are published here.
+For older devices such as iPhone 6s, start with **Efficient** and **Automatic antialiasing**. Efficient retains the PBR textures, native resolution, and lamp shadows while reducing shadow filtering and disabling the extra screen effects. Performance varies by device; a sustained frame rate is not guaranteed.
 
-### Existing features
+## Release and installation
 
-- Physically based coin, table, and selected prop materials, with individual metalness and roughness.
-- An original procedural environment map for metallic highlights and glass reflections.
-- Per-pixel glass highlights and view-dependent reflections, preserving the original transparency silhouettes.
-- HDR rendering, restrained bloom, and subtle edge shading.
-- Screen-space contact shading and 4× antialiasing in Enhanced mode; no bloom/vignette, 2× antialiasing, and no screen-space occlusion in Efficient mode.
-- **GRAPHICS** below **HIGH SCORES**, assembled from the original green button border and letter sprites.
-- Persistent **Automatic / Efficient / Enhanced** quality choices. Changes apply on the next game start or resume. Automatic selects Enhanced on devices with at least 4 GiB RAM when Low Power Mode is off; this is a conservative initial heuristic, not a performance benchmark.
+[**View the 1.0 source release**](https://github.com/strawberrypoptarts/iQuarters-realism/releases/tag/v1.0)
 
-HUD rendering remains separate from the gameplay effects. Timestamp-based flick input and the existing frame-rate-independent physics are retained, including the request for up to 120 Hz on compatible displays.
-
-## Install
-
-The experimental IPA is currently distributed locally, not as a public GitHub release. Building and packaging creates `dist/iQuarters-realism-0.5.0-ios15.ipa`.
-
-- iOS/iPadOS 15 or later, arm64.
+- Requires **iOS or iPadOS 15 or later**, on an arm64 device.
 - App name: **iQuarters Realism**.
-- Bundle ID: `com.itsgames.iquarters.realism`.
-- Installs beside the original iQuarters and uses its own app storage.
-- The IPA is ad-hoc signed; ordinary sideloaders must provision and re-sign it.
+- Bundle identifier: `com.itsgames.iquarters.realism`.
+- IPA files are kept local and are not attached to the public release.
+- Building and packaging produces an IPA in `dist/`. The package is ad-hoc signed; conventional sideloaders must provision and re-sign it.
 
-**This is a first graphics experiment, not a finished photorealistic remaster.** Device appearance, launch, battery use, and sustained performance still require physical-device testing. The room backdrop and meshes are the recovered low-resolution originals. Glass reflection is an approximation, not volumetric refraction. No new collision geometry or gameplay rules were introduced.
+The 1.0 release identifies the current source snapshot. App build metadata is retained from that snapshot.
 
-## Build
+## Build from source
 
-macOS, .NET SDK 10.0.401, the matching iOS 27 preview workload, and Xcode 27 are used for this source. The minimum deployment version remains iOS 15.
+The project uses macOS, **.NET SDK 10.0.401**, the matching **iOS 27 preview workload**, and **Xcode 27**. The deployment target remains iOS 15.
 
 ```sh
 export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
@@ -74,14 +58,22 @@ dotnet build Recovered/iOS/IQuarters.iOS.csproj \
 python3 Recovery/tools/package_ipa.py
 ```
 
-All converted assets needed to build are included. Neither the original IPA nor Unity is required. `Recovery/tools/generate_realism_environment.py` regenerates the included reflection map using only Python's standard library. `generate_realism_surfaces.py` regenerates the microstructure maps; the table map originals and material notes are in `Artwork/Table`. These are synthetic microstructure, not recovered height measurements.
+The converted assets needed to build are included. You do not need the original IPA or a Unity installation.
 
-## Source
+## Project layout
 
-- `Recovered/Core`: original C# gameplay and physics.
-- `Recovered/iOS/RealismRendering.cs`: material and camera effects, quality selection.
-- `Recovered/iOS/GraphicsMenu.cs`: original-style button and graphics choices.
-- `Recovery/realism`: new rendering assets.
-- `Recovered/Verification`: gameplay verification suite.
+| Directory | Contents |
+| --- | --- |
+| `Recovered/Core` | C# gameplay and physics |
+| `Recovered/iOS` | iOS app, rendering, menus, and controls |
+| `Recovered/Verification` | Gameplay verification suite |
+| `Recovery/converted` | Recovered game assets and animation data |
+| `Recovery/realism` | Material textures and rendering profiles |
+| `Artwork` | Artwork sources and material notes |
+| `Recovery/tools` | Packaging, conversion, and preview utilities |
 
-Existing recovery notes describe the baseline reconstruction; the realism edition intentionally changes its rendering. See [Apple's physically based shading documentation](https://developer.apple.com/documentation/scenekit/scnmaterial/lightingmodel-swift.struct/physicallybased) for the material model and [ambient occlusion documentation](https://developer.apple.com/documentation/scenekit/scncamera/screenspaceambientocclusionintensity) for the contact-shading effect.
+## About the visuals
+
+The new textures include AI-assisted artwork and synthetic surface maps. The original meshes and room backgrounds remain part of the game's appearance. Glass uses an approximation of transparency and reflections rather than volumetric refraction or caustics. New graphics-menu lettering approximates the original font; its button artwork and animation clips come from the recovered game.
+
+This repository is independent of both the [original iOS edition](https://github.com/strawberrypoptarts/iQuarters) and the [web edition](https://github.com/strawberrypoptarts/iQuarters-web).
