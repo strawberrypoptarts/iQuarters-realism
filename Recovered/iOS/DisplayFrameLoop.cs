@@ -6,11 +6,12 @@ namespace IQuarters.iOS;
 sealed class DisplayFrameLoop : IDisposable
 {
     readonly CADisplayLink link;
+    readonly SCNView[] views;
     readonly Action<float> update;
     double previousTarget;
     public DisplayFrameLoop(UIScreen screen,Action<float> update,params SCNView[] views)
     {
-        this.update=update;
+        this.update=update;this.views=views;
         int maximum=(int)Math.Clamp((long)screen.MaximumFramesPerSecond,1,120);
         foreach(var view in views){view.PreferredFramesPerSecond=maximum;view.Playing=true;view.RendersContinuously=true;}
         link=CADisplayLink.Create(Frame);
@@ -23,5 +24,5 @@ sealed class DisplayFrameLoop : IDisposable
         double seconds=previousTarget>0?next-previousTarget:next-link.Timestamp;previousTarget=next;
         if(double.IsFinite(seconds)&&seconds>0)update((float)Math.Min(seconds,.05));
     }
-    public void Dispose(){link.Invalidate();link.Dispose();}
+    public void Dispose(){link.Invalidate();link.Dispose();foreach(var view in views){view.Playing=false;view.RendersContinuously=false;}}
 }

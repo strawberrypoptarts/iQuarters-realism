@@ -45,7 +45,7 @@ public sealed partial class LegacyScene
             AttenuationStartDistance=0,AttenuationEndDistance=18,AttenuationFalloffExponent=2,
             CastsShadow=true,ShadowMode=SCNShadowMode.Forward,ShadowColor=UIColor.FromWhiteAlpha(0,.65f),
             ShadowMapSize=new CGSize(enhanced?2048:1024,enhanced?2048:1024),
-            ShadowSampleCount=enhanced?16u:8u,ShadowRadius=enhanced?3:2,ShadowBias=.003f,ZNear=.1f,ZFar=20
+            ShadowSampleCount=enhanced?16u:4u,ShadowRadius=enhanced?3:2,ShadowBias=.003f,ZNear=.1f,ZFar=20
         };
         var source=new SCNNode{Name="Realism soft spotlight",Light=light,Position=new(0,-.3f,0)};
         lamp.AddChildNode(source);source.Look(new SCNVector3(0,0,0));

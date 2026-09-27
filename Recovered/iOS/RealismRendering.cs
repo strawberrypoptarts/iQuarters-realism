@@ -11,6 +11,16 @@ static class RealismRendering
         get => NSUserDefaults.StandardUserDefaults.StringForKey("realism.quality") ?? "auto";
         set => NSUserDefaults.StandardUserDefaults.SetString(value, "realism.quality");
     }
+    public static string Antialiasing {
+        get => NSUserDefaults.StandardUserDefaults.StringForKey("realism.antialiasing") ?? "auto";
+        set => NSUserDefaults.StandardUserDefaults.SetString(value,"realism.antialiasing");
+    }
+    public static void ConfigureAntialiasing(SCNView view) => view.AntialiasingMode = Antialiasing switch {
+        "off" => SCNAntialiasingMode.None,
+        "2x" => SCNAntialiasingMode.Multisampling2X,
+        "4x" => SCNAntialiasingMode.Multisampling4X,
+        _ => Enhanced ? SCNAntialiasingMode.Multisampling4X : SCNAntialiasingMode.Multisampling2X
+    };
     public static bool LampEnabled {
         get => NSUserDefaults.StandardUserDefaults["realism.lamp"] == null || NSUserDefaults.StandardUserDefaults.BoolForKey("realism.lamp");
         set => NSUserDefaults.StandardUserDefaults.SetBool(value,"realism.lamp");
@@ -22,18 +32,18 @@ static class RealismRendering
     public static void Configure(SCNCamera camera, SCNView view)
     {
         bool enhanced = Enhanced;
-        view.AntialiasingMode = enhanced ? SCNAntialiasingMode.Multisampling4X : SCNAntialiasingMode.Multisampling2X;
+        ConfigureAntialiasing(view);
         camera.WantsHdr = true;
         camera.WantsExposureAdaptation = false; // No brightness pumping as the coin moves.
         camera.ExposureOffset = 0;
         camera.WhitePoint = 4;
-        camera.BloomIntensity = enhanced ? .14f : .07f;
+        camera.BloomIntensity = enhanced ? .14f : 0;
         camera.BloomThreshold = 1.1f;
         camera.BloomBlurRadius = enhanced ? 7 : 4;
         camera.ScreenSpaceAmbientOcclusionIntensity = enhanced ? .28f : 0;
         camera.ScreenSpaceAmbientOcclusionRadius = .18f;
         camera.ScreenSpaceAmbientOcclusionBias = .015f;
-        camera.VignettingIntensity = .08f;
+        camera.VignettingIntensity = enhanced ? .08f : 0;
         camera.VignettingPower = 1.4f;
         // HUD is rendered by its separate, unchanged camera; it remains sharp.
     }
@@ -84,6 +94,14 @@ public sealed partial class LegacyScene
                     break;
             }
         }
+        // Trilinear mip filtering reduces distant texture shimmer without more MSAA samples.
+        foreach(var material in materials.Values)
+            foreach(var map in new[]{material.Diffuse,material.Normal,material.Roughness}) {
+                map.MinificationFilter=SCNFilterMode.Linear;
+                map.MagnificationFilter=SCNFilterMode.Linear;
+                map.MipFilter=SCNFilterMode.Linear;
+                map.MaxAnisotropy=2;
+            }
         ConfigureTableCoordinates();
         AddRealismLamp();
     }

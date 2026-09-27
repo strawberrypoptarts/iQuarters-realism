@@ -41,13 +41,22 @@ public sealed partial class MainMenuController
     {
         if(screen!="main")return;
         Sound("sharedassets0.assets-131.wav");
-        var panel=UIAlertController.Create("Graphics",$"Current: {RealismRendering.Quality}\nOverhead lamp: {(RealismRendering.LampEnabled ? "On" : "Off")}\nChanges apply when you start or resume a game.",UIAlertControllerStyle.Alert);
+        var panel=UIAlertController.Create("Graphics",$"Current: {RealismRendering.Quality}\nAntialiasing: {RealismRendering.Antialiasing}\nOverhead lamp: {(RealismRendering.LampEnabled ? "On" : "Off")}\nChanges apply when you start or resume a game.",UIAlertControllerStyle.Alert);
         void Choice(string title,string value)=>panel.AddAction(UIAlertAction.Create(title,UIAlertActionStyle.Default,_=>RealismRendering.Quality=value));
         Choice("Automatic — recommended","auto");
         Choice("Efficient — lighter effects","efficient");
         Choice("Enhanced — full effects","enhanced");
         panel.AddAction(UIAlertAction.Create(RealismRendering.LampEnabled ? "Turn lamp off" : "Turn lamp on",UIAlertActionStyle.Default,_=>RealismRendering.LampEnabled=!RealismRendering.LampEnabled));
+        panel.AddAction(UIAlertAction.Create("Antialiasing…",UIAlertActionStyle.Default,_=>panel.DismissViewController(true,ShowAntialiasing)));
         panel.AddAction(UIAlertAction.Create("Done",UIAlertActionStyle.Cancel,null));
+        PresentViewController(panel,true,null);
+    }
+    void ShowAntialiasing()
+    {
+        var panel=UIAlertController.Create("Antialiasing","Smooths object edges. Automatic uses 2× in Efficient and 4× in Enhanced. Higher settings cost more GPU time. Applies to the next game.",UIAlertControllerStyle.Alert);
+        foreach(var (title,value) in new[]{("Automatic — recommended","auto"),("Off — fastest","off"),("2× — balanced","2x"),("4× — smoother","4x")})
+            panel.AddAction(UIAlertAction.Create(title,UIAlertActionStyle.Default,_=>RealismRendering.Antialiasing=value));
+        panel.AddAction(UIAlertAction.Create("Cancel",UIAlertActionStyle.Cancel,null));
         PresentViewController(panel,true,null);
     }
     static UIImage GraphicsButtonImage()

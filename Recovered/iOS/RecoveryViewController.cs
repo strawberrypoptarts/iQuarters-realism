@@ -64,7 +64,7 @@ public sealed partial class GameViewController : UIViewController
         camera=new SCNNode {Camera=new SCNCamera {FieldOfView=55,ZNear=.05,ZFar=300},Position=new(0,4.815438f,6.119505f),EulerAngles=new(-.5585f,0,0)};game.Scene.RootNode.AddChildNode(camera);
         display=new SCNView(View.Bounds){Scene=game.Scene,PointOfView=camera,AutoenablesDefaultLighting=false,BackgroundColor=UIColor.Black,AutoresizingMask=UIViewAutoresizing.FlexibleDimensions};View.AddSubview(display);RealismRendering.Configure(camera.Camera!,display);
         var uiCamera=new SCNNode {Camera=new SCNCamera {UsesOrthographicProjection=true,OrthographicScale=100,ZNear=.3,ZFar=1100},Position=new(0,0,1000)};ui.Scene.RootNode.AddChildNode(uiCamera);
-        overlay=new TouchSceneView(View.Bounds){Scene=ui.Scene,PointOfView=uiCamera,Opaque=false,BackgroundColor=UIColor.Clear,AutoresizingMask=UIViewAutoresizing.FlexibleDimensions};View.AddSubview(overlay);
+        overlay=new TouchSceneView(View.Bounds){Scene=ui.Scene,PointOfView=uiCamera,Opaque=false,BackgroundColor=UIColor.Clear,AutoresizingMask=UIViewAutoresizing.FlexibleDimensions};View.AddSubview(overlay);RealismRendering.ConfigureAntialiasing(overlay);
         textLayer.Frame=View.Bounds;textLayer.AutoresizingMask=UIViewAutoresizing.FlexibleDimensions;View.AddSubview(textLayer);
         overlay.AddGestureRecognizer(new UITapGestureRecognizer(g=>Tap(g.LocationInView(overlay))){CancelsTouchesInView=false});
         var touchView=(TouchSceneView)overlay;

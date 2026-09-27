@@ -11,6 +11,7 @@ let width=CommandLine.arguments.count>4 ? Double(CommandLine.arguments[4])! : 64
 let height=CommandLine.arguments.count>5 ? Double(CommandLine.arguments[5])! : 960
 let mode=CommandLine.arguments.count>6 ? CommandLine.arguments[6] : "game"
 
+let enhanced=CommandLine.arguments.count<10 || CommandLine.arguments[9] != "efficient"
 let lampOn=CommandLine.arguments.count<8 || CommandLine.arguments[7] != "off"
 let selectedRound=CommandLine.arguments.count>8 ? Int(CommandLine.arguments[8])! : 0
 let improved=CommandLine.arguments[3]=="after"
@@ -127,10 +128,11 @@ for (key,record) in data["materials"] as! [String:[String:Any]] {
  if let shader=profile["shader"] as? String {mat.shaderModifiers=[.surface:shader]}
  if let alpha=profile["transparency"] as? Double {mat.transparency=CGFloat(alpha);mat.transparencyMode = .aOne;mat.writesToDepthBuffer=false}
 }
+for mat in materials.values {for map in [mat.diffuse,mat.normal,mat.roughness] {map.minificationFilter = .linear;map.magnificationFilter = .linear;map.mipFilter = .linear;map.maxAnisotropy=2}}
 camera.camera!.wantsHDR=true;camera.camera!.wantsExposureAdaptation=false;camera.camera!.whitePoint=4
-camera.camera!.bloomIntensity=0.14;camera.camera!.bloomThreshold=1.1;camera.camera!.bloomBlurRadius=7
-camera.camera!.screenSpaceAmbientOcclusionIntensity=0.28;camera.camera!.screenSpaceAmbientOcclusionRadius=0.18;camera.camera!.screenSpaceAmbientOcclusionBias=0.015
-camera.camera!.vignettingIntensity=0.08;camera.camera!.vignettingPower=1.4
+camera.camera!.bloomIntensity=enhanced ? 0.14 : 0;camera.camera!.bloomThreshold=1.1;camera.camera!.bloomBlurRadius=7
+camera.camera!.screenSpaceAmbientOcclusionIntensity=enhanced ? 0.28 : 0;camera.camera!.screenSpaceAmbientOcclusionRadius=0.18;camera.camera!.screenSpaceAmbientOcclusionBias=0.015
+camera.camera!.vignettingIntensity=enhanced ? 0.08 : 0;camera.camera!.vignettingPower=1.4
 
 
 if let table=nodes.values.first(where:{$0.name=="table_00"}),let old=table.geometry {
@@ -150,12 +152,12 @@ if lampOn {
  let disk=SCNCylinder(radius:0.46,height:0.025);disk.firstMaterial=bulb;let dn=SCNNode(geometry:disk);dn.position=SCNVector3(0,-0.23,0);dn.castsShadow=false;lamp.addChildNode(dn)
  let cable=SCNCylinder(radius:0.015,height:3);cable.firstMaterial=metal;let cn=SCNNode(geometry:cable);cn.position=SCNVector3(0,1.7,0);cn.castsShadow=false;lamp.addChildNode(cn)
  let l=SCNLight();l.type = .spot;l.color=NSColor(red:1,green:0.91,blue:0.78,alpha:1);l.intensity=650;l.categoryBitMask=0xf00;l.spotInnerAngle=45;l.spotOuterAngle=100;l.attenuationStartDistance=0;l.attenuationEndDistance=18;l.attenuationFalloffExponent=2
- l.castsShadow=true;l.shadowMode = .forward;l.shadowColor=NSColor(white:0,alpha:0.65);l.shadowMapSize=CGSize(width:2048,height:2048);l.shadowSampleCount=16;l.shadowRadius=3;l.shadowBias=0.003;l.zNear=0.1;l.zFar=20
+ l.castsShadow=true;l.shadowMode = .forward;l.shadowColor=NSColor(white:0,alpha:0.65);l.shadowMapSize=CGSize(width:enhanced ? 2048 : 1024,height:enhanced ? 2048 : 1024);l.shadowSampleCount=enhanced ? 16 : 4;l.shadowRadius=enhanced ? 3 : 2;l.shadowBias=0.003;l.zNear=0.1;l.zFar=20
  let ln=SCNNode();ln.light=l;ln.position=SCNVector3(0,-0.3,0);lamp.addChildNode(ln);ln.look(at:SCNVector3(0,0,0))
 }
 
 let renderer=SCNRenderer(device:MTLCreateSystemDefaultDevice(),options:nil);renderer.scene=scene;renderer.pointOfView=camera;renderer.autoenablesDefaultLighting = !improved
-let image=renderer.snapshot(atTime:0,with:CGSize(width:width,height:height),antialiasingMode:.multisampling4X)
+let image=renderer.snapshot(atTime:0,with:CGSize(width:width,height:height),antialiasingMode:enhanced ? .multisampling4X : .multisampling2X)
 var finalImage=image
 if mode == "dim" || mode == "hud"{
  let ui=SCNScene();ui.background.contents=NSColor.clear;let uiWorld=SCNNode();uiWorld.scale=SCNVector3(-1,1,1);ui.rootNode.addChildNode(uiWorld)
@@ -178,7 +180,7 @@ if mode == "dim" || mode == "hud"{
  }
  let cam=SCNNode();cam.camera=SCNCamera();cam.camera!.usesOrthographicProjection=true;cam.camera!.orthographicScale=max(100,66.666667*height/width);cam.camera!.zNear=0.3;cam.camera!.zFar=1100;cam.position=SCNVector3(0,0,1000);ui.rootNode.addChildNode(cam)
  let r=SCNRenderer(device:MTLCreateSystemDefaultDevice(),options:nil);r.scene=ui;r.pointOfView=cam
- let over=r.snapshot(atTime:0,with:CGSize(width:width,height:height),antialiasingMode:.multisampling4X)
+ let over=r.snapshot(atTime:0,with:CGSize(width:width,height:height),antialiasingMode:enhanced ? .multisampling4X : .multisampling2X)
  finalImage=NSImage(size:CGSize(width:width,height:height));finalImage.lockFocus();image.draw(in:CGRect(x:0,y:0,width:width,height:height));over.draw(in:CGRect(x:0,y:0,width:width,height:height));finalImage.unlockFocus()
 }
 let bitmap=NSBitmapImageRep(data:finalImage.tiffRepresentation!)!;try bitmap.representation(using:.png,properties:[:])!.write(to:URL(fileURLWithPath:CommandLine.arguments[2]))

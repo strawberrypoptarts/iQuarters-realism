@@ -16,7 +16,7 @@ public sealed partial class MainMenuController : UIViewController
         base.ViewDidLoad();View!.BackgroundColor=UIColor.Black;
         legacy=new LegacyScene("frontend.json",true);legacy.HideRoots();
         var camera=new SCNNode {Position=new SCNVector3(0,0,1000),Camera=new SCNCamera {UsesOrthographicProjection=true,OrthographicScale=100,ZNear=.3,ZFar=1100}};legacy.Scene.RootNode.AddChildNode(camera);
-        display=new SCNView(View.Bounds){Scene=legacy.Scene,PointOfView=camera,BackgroundColor=UIColor.Black,AutoresizingMask=UIViewAutoresizing.FlexibleDimensions};View.AddSubview(display);
+        display=new SCNView(View.Bounds){Scene=legacy.Scene,PointOfView=camera,BackgroundColor=UIColor.Black,AutoresizingMask=UIViewAutoresizing.FlexibleDimensions};View.AddSubview(display);RealismRendering.ConfigureAntialiasing(display);
         textLayer.Frame=View.Bounds;textLayer.AutoresizingMask=UIViewAutoresizing.FlexibleDimensions;textLayer.UserInteractionEnabled=false;View.AddSubview(textLayer);
         display.AddGestureRecognizer(new UITapGestureRecognizer(g=>Tap(g.LocationInView(display))));
         CreateGraphicsButton();Home(true);
