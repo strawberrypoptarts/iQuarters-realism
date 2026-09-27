@@ -4,7 +4,14 @@
 
 This is an independent copy of the [native iQuarters reconstruction](https://github.com/strawberrypoptarts/iQuarters), starting from commit `4798e18`. It explores richer rendering while retaining the recovered gameplay, physics, levels, menus, animations, and audio. The original and web repositories are separate.
 
-## First graphics pass — 0.1.0
+## Current graphics pass — 0.2.0
+
+- Rebalanced the recovered lights for the new materials after a desktop preview exposed severe highlight clipping in 0.1.0.
+- Added offline-generated wood normal/roughness maps and fine metal roughness variation.
+- Improved glass readability under the adjusted lighting.
+- Kept the IPA local at the owner's request; source changes are published here.
+
+### Existing features
 
 - Physically based coin, table, and selected prop materials, with individual metalness and roughness.
 - An original procedural environment map for metallic highlights and glass reflections.
@@ -18,7 +25,7 @@ HUD rendering remains separate from the gameplay effects. Timestamp-based flick 
 
 ## Install
 
-Download the experimental IPA from [Releases](https://github.com/strawberrypoptarts/iQuarters-realism/releases).
+The experimental IPA is currently distributed locally, not as a public GitHub release. Building and packaging creates `dist/iQuarters-realism-0.2.0-ios15.ipa`.
 
 - iOS/iPadOS 15 or later, arm64.
 - App name: **iQuarters Realism**.
@@ -42,7 +49,7 @@ dotnet build Recovered/iOS/IQuarters.iOS.csproj \
 python3 Recovery/tools/package_ipa.py
 ```
 
-All converted assets needed to build are included. Neither the original IPA nor Unity is required. `Recovery/tools/generate_realism_environment.py` regenerates the included reflection map using only Python's standard library.
+All converted assets needed to build are included. Neither the original IPA nor Unity is required. `Recovery/tools/generate_realism_environment.py` regenerates the included reflection map using only Python's standard library. `generate_realism_surfaces.py` regenerates the material data maps. These are synthetic microstructure, not recovered height measurements.
 
 ## Source
 

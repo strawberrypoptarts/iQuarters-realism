@@ -22,7 +22,7 @@ static class RealismRendering
         camera.WantsHdr = true;
         camera.WantsExposureAdaptation = false; // No brightness pumping as the coin moves.
         camera.ExposureOffset = 0;
-        camera.WhitePoint = 1;
+        camera.WhitePoint = 4;
         camera.BloomIntensity = enhanced ? .14f : .07f;
         camera.BloomThreshold = 1.1f;
         camera.BloomBlurRadius = enhanced ? 7 : 4;
@@ -37,9 +37,19 @@ static class RealismRendering
 
 public sealed partial class LegacyScene
 {
+    bool realismMaterialsApplied;
     public void ApplyRealismMaterials()
     {
-        var environment = UIImage.FromFile(Path.Combine(NSBundle.MainBundle.ResourcePath!, "Realism", "studio-environment.png"));
+        if(realismMaterialsApplied)return;
+        realismMaterialsApplied=true;
+        UIImage Texture(string name) => UIImage.FromFile(Path.Combine(NSBundle.MainBundle.ResourcePath!, "Realism", name+".png"))!;
+        var environment = Texture("studio-environment");
+        // Recovered fixed-function lights overpower energy-conserving materials.
+        void Balance(SCNNode node) {
+            if(node.Light is {} light) light.Intensity *= light.LightType == SCNLightType.Ambient ? .25f : .14f;
+            foreach(var child in node.ChildNodes) Balance(child);
+        }
+        Balance(Scene.RootNode);
         Scene.LightingEnvironment.Contents = environment;
         Scene.LightingEnvironment.Intensity = .8f;
         var definitions = assets.Read("scene.json").GetProperty("materials");
@@ -49,10 +59,15 @@ public sealed partial class LegacyScene
             switch (name)
             {
                 case "quarter00":
-                    Physical(material, .92f, .27f);
+                    Physical(material, .85f, .36f);
+                    material.Diffuse.Intensity = .7f;
+                    material.Roughness.Contents = Texture("metal-roughness");
                     break;
                 case "table_00":
-                    Physical(material, 0, .58f);
+                    Physical(material, 0, .6f);
+                    material.Normal.Contents = Texture("wood-normal");
+                    material.Normal.Intensity = .45f;
+                    material.Roughness.Contents = Texture("wood-roughness");
                     break;
                 case "defl_cellphone01":
                 case "pendulum_00":
@@ -71,7 +86,10 @@ public sealed partial class LegacyScene
                     material.LightingModelName = SCNLightingModel.Blinn;
                     material.LitPerPixel = true;
                     material.ShaderModifiers = null;
-                    material.Specular.Contents = UIColor.FromWhiteAlpha(.85f, 1);
+                    material.ShaderModifiers = new SCNShaderModifiers {
+                        EntryPointSurface = "_surface.emission.rgb = _surface.diffuse.rgb * 0.4;"
+                    };
+                    material.Specular.Contents = UIColor.FromWhiteAlpha(.45f, 1);
                     material.Shininess = 90;
                     material.Reflective.Contents = environment;
                     material.Reflective.Intensity = .24f;
