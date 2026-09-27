@@ -41,12 +41,13 @@ public sealed partial class MainMenuController
     {
         if(screen!="main")return;
         Sound("sharedassets0.assets-131.wav");
-        var panel=UIAlertController.Create("Graphics",$"Current: {RealismRendering.Quality}\nChanges apply when you start or resume a game.",UIAlertControllerStyle.Alert);
+        var panel=UIAlertController.Create("Graphics",$"Current: {RealismRendering.Quality}\nOverhead lamp: {(RealismRendering.LampEnabled ? "On" : "Off")}\nChanges apply when you start or resume a game.",UIAlertControllerStyle.Alert);
         void Choice(string title,string value)=>panel.AddAction(UIAlertAction.Create(title,UIAlertActionStyle.Default,_=>RealismRendering.Quality=value));
         Choice("Automatic — recommended","auto");
         Choice("Efficient — lighter effects","efficient");
         Choice("Enhanced — full effects","enhanced");
-        panel.AddAction(UIAlertAction.Create("Cancel",UIAlertActionStyle.Cancel,null));
+        panel.AddAction(UIAlertAction.Create(RealismRendering.LampEnabled ? "Turn lamp off" : "Turn lamp on",UIAlertActionStyle.Default,_=>RealismRendering.LampEnabled=!RealismRendering.LampEnabled));
+        panel.AddAction(UIAlertAction.Create("Done",UIAlertActionStyle.Cancel,null));
         PresentViewController(panel,true,null);
     }
     static UIImage GraphicsButtonImage()

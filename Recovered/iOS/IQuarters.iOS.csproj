@@ -2,8 +2,8 @@
   <PropertyGroup>
     <TargetFramework>net10.0-ios27.0</TargetFramework>
     <OutputType>Exe</OutputType>
-    <ApplicationDisplayVersion>0.2.0</ApplicationDisplayVersion>
-    <ApplicationVersion>2</ApplicationVersion>
+    <ApplicationDisplayVersion>0.3.0</ApplicationDisplayVersion>
+    <ApplicationVersion>3</ApplicationVersion>
     <!-- Preserve native runtime symbols: also makes device startup failures diagnosable. -->
     <MtouchNoSymbolStrip>true</MtouchNoSymbolStrip>
     <!-- Installed Xcode 27 requires the matching preview bindings. -->
@@ -19,6 +19,7 @@
     <TrimMode Condition="'$(Configuration)' == 'Release'">full</TrimMode>
   </PropertyGroup>
   <ItemGroup>
+    <BundleResource Include="../../Recovery/realism/*.json" LogicalName="Realism/%(Filename)%(Extension)" />
     <BundleResource Include="../../Recovery/realism/*.png" LogicalName="Realism/%(Filename)%(Extension)" />
     <!-- Keep AOT trampolines in the signed executable; avoid remapped executable pages. -->
     <_AotArguments Include="nopagetrampolines" />

@@ -2,6 +2,7 @@ import Foundation
 import SceneKit
 import AppKit
 import Metal
+import simd
 let base=URL(fileURLWithPath:CommandLine.arguments[1])
 func json(_ name:String)throws->Any {try JSONSerialization.jsonObject(with:Data(contentsOf:base.appendingPathComponent(name)))}
 let data=try json("scene.json") as! [String:Any]
@@ -10,6 +11,8 @@ let width=CommandLine.arguments.count>4 ? Double(CommandLine.arguments[4])! : 64
 let height=CommandLine.arguments.count>5 ? Double(CommandLine.arguments[5])! : 960
 let mode=CommandLine.arguments.count>6 ? CommandLine.arguments[6] : "game"
 
+let lampOn=CommandLine.arguments.count<8 || CommandLine.arguments[7] != "off"
+let selectedRound=CommandLine.arguments.count>8 ? Int(CommandLine.arguments[8])! : 0
 let improved=CommandLine.arguments[3]=="after"
 let lighting=try json("lighting.json") as! [String:Any]
 var nodes=[Int:SCNNode]();var materials=[String:SCNMaterial]();var meshes=[String:SCNGeometry]()
@@ -67,16 +70,16 @@ for (id,node) in nodes {if let p=parents[id],let owner=owners[p]{nodes[owner]!.a
 for record in data["nodes"] as! [[String:Any]] {let n=nodes[record["id"] as! Int]!;if record["rendererEnabled"] as? Bool == false && !n.childNodes.isEmpty{n.geometry=nil;n.opacity=1}}
 func activate(_ n:SCNNode){n.isHidden=false;for child in n.childNodes{activate(child)}}
 for name in ["table_00","scene_bar_00","a_quarter5"]{nodes.values.first{$0.name==name}?.isHidden=false}
-for id in (data["rounds"] as! [[Int]])[0]{activate(nodes[id]!);var n:SCNNode?=nodes[id];while let v=n{v.isHidden=false;n=v.parent}}
+for id in (data["rounds"] as! [[Int]])[selectedRound]{activate(nodes[id]!);var n:SCNNode?=nodes[id];while let v=n{v.isHidden=false;n=v.parent}}
 if improved{
- for shadow in (lighting["roundShadows"] as! [[[String:Any]]])[0]{let n=nodes[shadow["shadow"] as! Int]!,g=nodes[shadow["glass"] as! Int]!;activate(n);n.opacity=1;n.position=SCNVector3(g.position.x,n.position.y,g.position.z);let size=shadow["scale"] as! Double;n.scale=SCNVector3(size,n.scale.y,size)}
+ for shadow in (lighting["roundShadows"] as! [[[String:Any]]])[selectedRound]{let n=nodes[shadow["shadow"] as! Int]!,g=nodes[shadow["glass"] as! Int]!;activate(n);n.opacity=1;n.position=SCNVector3(g.position.x,n.position.y,g.position.z);let size=shadow["scale"] as! Double;n.scale=SCNVector3(size,n.scale.y,size)}
  let a=lighting["ambient"] as! [Double];let ambient=SCNNode();ambient.light=SCNLight();ambient.light!.type = .ambient;ambient.light!.color=NSColor(red:a[0],green:a[1],blue:a[2],alpha:1);ambient.light!.intensity=250;scene.rootNode.addChildNode(ambient)
  for source in lighting["lights"] as! [[String:Any]]{
   let owner=source["owner"] as! Int,mask=source["mask"] as! Int
   let record=(data["nodes"] as! [[String:Any]]).first{$0["id"] as! Int==owner}!
   if !(source["enabled"] as! Bool) || !(record["active"] as! Bool) || mask & 0xf00 == 0 {continue}
   let node=nodes[owner]!;node.isHidden=false;let lamp=SCNNode();lamp.eulerAngles=SCNVector3(0,Double.pi,0);let l=SCNLight();lamp.light=l;l.type=(source["type"] as! Int)==0 ? .spot : (source["type"] as! Int)==1 ? .directional : .omni;let c=source["color"] as! [Double];l.color=NSColor(red:c[0],green:c[1],blue:c[2],alpha:c[3])
-  l.intensity=CGFloat((source["intensity"] as! Double)*140);l.categoryBitMask=mask;l.attenuationStartDistance=0;l.attenuationEndDistance=CGFloat(source["range"] as! Double);l.attenuationFalloffExponent=2;l.spotInnerAngle=0;l.spotOuterAngle=CGFloat(source["spotAngle"] as! Double);node.addChildNode(lamp)
+  l.intensity=CGFloat((source["intensity"] as! Double)*(lampOn ? 80 : 140));l.categoryBitMask=mask;l.attenuationStartDistance=0;l.attenuationEndDistance=CGFloat(source["range"] as! Double);l.attenuationFalloffExponent=2;l.spotInnerAngle=0;l.spotOuterAngle=CGFloat(source["spotAngle"] as! Double);node.addChildNode(lamp)
  }
 }
 let camera=SCNNode();camera.camera=SCNCamera();camera.camera!.fieldOfView=CGFloat(2*atan(tan(55*Double.pi/360)*max(1,(2.0/3)*height/width))*180/Double.pi);camera.camera!.zNear=0.05;camera.camera!.zFar=300;camera.position=SCNVector3(0,4.815438,6.119505);camera.eulerAngles=SCNVector3(-0.5585,0,0);scene.rootNode.addChildNode(camera)
@@ -99,24 +102,57 @@ func sample(_ root:SCNNode,_ clipId:Int,_ time:Double){
 if mode == "glow"{
  let coin=nodes[965]!;coin.position=SCNVector3(0,0.3,0);activate(nodes[957]!);nodes[957]!.position=SCNVector3(0,0.18,0);sample(nodes[957]!,506,0.4)
 }
+if mode == "reverse" {nodes[965]!.simdOrientation = simd_quatf(angle: .pi,axis: SIMD3<Float>(0,1,0)) * nodes[965]!.simdOrientation}
 if mode == "replay"{camera.position=nodes[2385]!.worldPosition;let q=nodes[2385]!.orientation;camera.orientation=SCNQuaternion(-q.x,-q.y,q.z,q.w);camera.look(at:SCNVector3(0,0.5,0))}
 
 let realism = base.deletingLastPathComponent().appendingPathComponent("realism")
 let environment=NSImage(contentsOf:realism.appendingPathComponent("studio-environment.png"))!
-scene.lightingEnvironment.contents=environment;scene.lightingEnvironment.intensity=0.8
+scene.lightingEnvironment.contents=environment;scene.lightingEnvironment.intensity=lampOn ? 0.45 : 0.8
 for (key,m) in data["materials"] as! [String:[String:Any]] {
  guard let mat=materials[key] else {continue}
  let name=m["name"] as! String
  let settings:[String:(Double,Double)] = ["quarter00":(0.85,0.36),"table_00":(0,0.6),"defl_cellphone01":(0.35,0.32),"pendulum_00":(0.35,0.32),"check_holder_00":(0,0.62),"bobble_00":(0,0.62),"hula_00":(0,0.62),"biplane_00":(0,0.62),"deflanim_bird01":(0,0.62)]
  if let (metal,rough)=settings[name] {mat.lightingModel = .physicallyBased;mat.isLitPerPixel=true;mat.shaderModifiers=nil;mat.emission.contents=NSColor.black;mat.metalness.contents=metal;mat.roughness.contents=rough}
- if name=="quarter00" {mat.diffuse.intensity=0.7;mat.roughness.contents=NSImage(contentsOf:realism.appendingPathComponent("metal-roughness.png"))!}
- if name=="table_00" {mat.normal.contents=NSImage(contentsOf:realism.appendingPathComponent("wood-normal.png"))!;mat.normal.intensity=0.45;mat.roughness.contents=NSImage(contentsOf:realism.appendingPathComponent("wood-roughness.png"))!}
- if name=="shotglass_00" {mat.lightingModel = .blinn;mat.isLitPerPixel=true;mat.shaderModifiers=nil;mat.shaderModifiers=[.surface:"_surface.emission.rgb = _surface.diffuse.rgb * 0.4;"];mat.specular.contents=NSColor(white:0.45,alpha:1);mat.shininess=90;mat.reflective.contents=environment;mat.reflective.intensity=0.24;mat.fresnelExponent=4;mat.transparencyMode = .aOne;mat.writesToDepthBuffer=false}
+ if name=="quarter00" {mat.diffuse.contents=NSImage(contentsOf:realism.appendingPathComponent("quarter-albedo.png"))!;mat.diffuse.intensity=0.8;mat.normal.contents=NSImage(contentsOf:realism.appendingPathComponent("quarter-normal.png"))!;mat.normal.intensity=0.25;mat.roughness.contents=NSImage(contentsOf:realism.appendingPathComponent("quarter-roughness.png"))!}
+ if name=="table_00" {mat.diffuse.contents=NSImage(contentsOf:realism.appendingPathComponent("table-albedo.png"))!;mat.ambientOcclusion.contents=NSColor.white;mat.normal.contents=NSImage(contentsOf:realism.appendingPathComponent("table-normal.png"))!;mat.normal.intensity=0.3;mat.roughness.contents=NSImage(contentsOf:realism.appendingPathComponent("table-roughness.png"))!}
+}
+
+let propProfiles=try JSONSerialization.jsonObject(with:Data(contentsOf:realism.appendingPathComponent("prop-materials.json"))) as! [String:[String:Any]]
+for (key,record) in data["materials"] as! [String:[String:Any]] {
+ guard let mat=materials[key],let profile=propProfiles[record["name"] as! String] else {continue}
+ mat.lightingModel = .physicallyBased;mat.isLitPerPixel=true;mat.shaderModifiers=nil;mat.emission.contents=NSColor.black
+ mat.metalness.contents=profile["metalness"];mat.roughness.contents=profile["roughness"]
+ mat.clearCoat.contents=profile["clearCoat"];mat.clearCoatRoughness.contents=profile["clearCoatRoughness"]
+ if let name=profile["albedo"] as? String {mat.diffuse.contents=NSImage(contentsOf:realism.appendingPathComponent(name+".png"))!}
+ if let shader=profile["shader"] as? String {mat.shaderModifiers=[.surface:shader]}
+ if let alpha=profile["transparency"] as? Double {mat.transparency=CGFloat(alpha);mat.transparencyMode = .aOne;mat.writesToDepthBuffer=false}
 }
 camera.camera!.wantsHDR=true;camera.camera!.wantsExposureAdaptation=false;camera.camera!.whitePoint=4
 camera.camera!.bloomIntensity=0.14;camera.camera!.bloomThreshold=1.1;camera.camera!.bloomBlurRadius=7
 camera.camera!.screenSpaceAmbientOcclusionIntensity=0.28;camera.camera!.screenSpaceAmbientOcclusionRadius=0.18;camera.camera!.screenSpaceAmbientOcclusionBias=0.015
 camera.camera!.vignettingIntensity=0.08;camera.camera!.vignettingPower=1.4
+
+
+if let table=nodes.values.first(where:{$0.name=="table_00"}),let old=table.geometry {
+ let m=try json("meshes/sharedassets1.assets-238.json") as! [String:Any];let v=m["vertices"] as! [[Double]]
+ let minX=v.map{$0[0]}.min()!,maxX=v.map{$0[0]}.max()!,minY=v.map{$0[1]}.min()!,maxY=v.map{$0[1]}.max()!
+ let uv=v.map{CGPoint(x:($0[0]-minX)/(maxX-minX),y:1-($0[1]-minY)/(maxY-minY))}
+ let g=SCNGeometry(sources:old.sources.filter{$0.semantic != .texcoord}+[SCNGeometrySource(textureCoordinates:uv)],elements:old.elements);g.materials=old.materials;table.geometry=g
+}
+if lampOn {
+ for n in nodes.values {n.castsShadow=n.geometry?.materials.contains(where:{$0.lightingModel == .physicallyBased && $0.writesToDepthBuffer}) ?? false}
+ nodes[1962]?.isHidden=true
+ let lamp=SCNNode();lamp.position=SCNVector3(-2,5.5,1);scene.rootNode.addChildNode(lamp)
+ let metal=SCNMaterial();metal.lightingModel = .physicallyBased;metal.isDoubleSided=true;metal.diffuse.contents=NSColor(red:0.12,green:0.16,blue:0.12,alpha:1);metal.metalness.contents=0.75;metal.roughness.contents=0.28
+ let shade=SCNCone(topRadius:0.16,bottomRadius:0.55,height:0.45);shade.firstMaterial=metal
+ let shadeNode=SCNNode(geometry:shade);shadeNode.castsShadow=false;lamp.addChildNode(shadeNode)
+ let bulb=SCNMaterial();bulb.lightingModel = .constant;bulb.diffuse.contents=NSColor(red:1,green:0.86,blue:0.62,alpha:1)
+ let disk=SCNCylinder(radius:0.46,height:0.025);disk.firstMaterial=bulb;let dn=SCNNode(geometry:disk);dn.position=SCNVector3(0,-0.23,0);dn.castsShadow=false;lamp.addChildNode(dn)
+ let cable=SCNCylinder(radius:0.015,height:3);cable.firstMaterial=metal;let cn=SCNNode(geometry:cable);cn.position=SCNVector3(0,1.7,0);cn.castsShadow=false;lamp.addChildNode(cn)
+ let l=SCNLight();l.type = .spot;l.color=NSColor(red:1,green:0.91,blue:0.78,alpha:1);l.intensity=650;l.categoryBitMask=0xf00;l.spotInnerAngle=45;l.spotOuterAngle=100;l.attenuationStartDistance=0;l.attenuationEndDistance=18;l.attenuationFalloffExponent=2
+ l.castsShadow=true;l.shadowMode = .forward;l.shadowColor=NSColor(white:0,alpha:0.65);l.shadowMapSize=CGSize(width:2048,height:2048);l.shadowSampleCount=16;l.shadowRadius=3;l.shadowBias=0.003;l.zNear=0.1;l.zFar=20
+ let ln=SCNNode();ln.light=l;ln.position=SCNVector3(0,-0.3,0);lamp.addChildNode(ln);ln.look(at:SCNVector3(0,0,0))
+}
 
 let renderer=SCNRenderer(device:MTLCreateSystemDefaultDevice(),options:nil);renderer.scene=scene;renderer.pointOfView=camera;renderer.autoenablesDefaultLighting = !improved
 let image=renderer.snapshot(atTime:0,with:CGSize(width:width,height:height),antialiasingMode:.multisampling4X)

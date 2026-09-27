@@ -1,0 +1,92 @@
+{
+  "deflanim_bird00": {
+    "metalness": 0,
+    "roughness": 0.22,
+    "clearCoat": 0.45,
+    "clearCoatRoughness": 0.18
+  },
+  "deflanim_bird01": {
+    "metalness": 0,
+    "roughness": 0.22,
+    "clearCoat": 0.45,
+    "clearCoatRoughness": 0.18
+  },
+  "helo_00": {
+    "metalness": 0.08,
+    "roughness": 0.34,
+    "clearCoat": 0.4,
+    "clearCoatRoughness": 0.18
+  },
+  "lazy_susan_00": {
+    "metalness": 0,
+    "roughness": 0.48,
+    "clearCoat": 0.18,
+    "clearCoatRoughness": 0.18
+  },
+  "lazy_susan_00-no name": {
+    "metalness": 0,
+    "roughness": 0.5,
+    "clearCoat": 0,
+    "clearCoatRoughness": 0.18
+  },
+  "bottleblue": {
+    "metalness": 0,
+    "roughness": 0.16,
+    "clearCoat": 0.6,
+    "clearCoatRoughness": 0.18
+  },
+  "deflanim_zip00": {
+    "metalness": 0.88,
+    "roughness": 0.28,
+    "clearCoat": 0,
+    "clearCoatRoughness": 0.18
+  },
+  "biplane_00": {
+    "metalness": 0.08,
+    "roughness": 0.34,
+    "clearCoat": 0.4,
+    "clearCoatRoughness": 0.18
+  },
+  "hula_00": {
+    "metalness": 0,
+    "roughness": 0.38,
+    "clearCoat": 0.35,
+    "clearCoatRoughness": 0.18
+  },
+  "bobble_00": {
+    "metalness": 0,
+    "roughness": 0.32,
+    "clearCoat": 0.5,
+    "clearCoatRoughness": 0.18,
+    "albedo": "bobble-albedo"
+  },
+  "check_holder_00": {
+    "metalness": 0,
+    "roughness": 0.62,
+    "clearCoat": 0.06,
+    "clearCoatRoughness": 0.18
+  },
+  "pendulum_00": {
+    "metalness": 0.8,
+    "roughness": 0.3,
+    "clearCoat": 0,
+    "clearCoatRoughness": 0.18,
+    "shader": "float wood = smoothstep(0.58, 0.62, _surface.diffuseTexcoord.x);\n_surface.metalness = mix(0.8, 0.0, wood);\n_surface.roughness = mix(0.3, 0.48, wood);"
+  },
+  "defl_cellphone01": {
+    "metalness": 0,
+    "roughness": 0.44,
+    "clearCoat": 0.18,
+    "clearCoatRoughness": 0.18,
+    "albedo": "phone-albedo",
+    "shader": "float2 uv = _surface.diffuseTexcoord;\nfloat innerScreen = step(0.13,uv.x)*step(uv.x,0.46)*step(0.13,uv.y)*step(uv.y,0.39);\nfloat outerScreen = step(0.70,uv.x)*step(uv.x,0.865)*step(0.225,uv.y)*step(uv.y,0.325);\nfloat screen = max(innerScreen,outerScreen);\nfloat3 c = _surface.diffuse.rgb;\nfloat bright = smoothstep(0.2,0.5,min(c.r,min(c.g,c.b)));\nfloat neutral = 1.0-smoothstep(0.02,0.12,max(c.r,max(c.g,c.b))-min(c.r,min(c.g,c.b)));\nfloat trim = bright*neutral*(1.0-screen);\n_surface.metalness = trim*0.8;\n_surface.roughness = mix(mix(0.44,0.24,trim),0.10,screen);\n_surface.clearCoat = mix(0.18,0.7,screen);\n_surface.emission.rgb = c*screen*0.24;"
+  },
+  "shotglass_00": {
+    "metalness": 0,
+    "roughness": 0.12,
+    "clearCoat": 0.45,
+    "clearCoatRoughness": 0.18,
+    "transparency": 0.8,
+    "shader": "_surface.emission.rgb = _surface.diffuse.rgb * 0.10;"
+  }
+}

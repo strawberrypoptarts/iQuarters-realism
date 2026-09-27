@@ -25,7 +25,7 @@ public sealed partial class GameViewController
         if(usingReplayCamera)FollowReplayCamera(dt);
         else FollowMainCamera(dt);
         // ShadowQuarterScript.Update, including its table bounds and lazy Susan lift.
-        var shadow=game.Nodes[1962];shadow.Hidden=false;shadow.Opacity=1;var p=coin.Position;float z=Math.Max(p.Z,-3.5f),y=p.Y<.1f?-10:.05f;
+        var shadow=game.Nodes[1962];if(game.HasRealismLamp){shadow.Hidden=true;return;}shadow.Hidden=false;shadow.Opacity=1;var p=coin.Position;float z=Math.Max(p.Z,-3.5f),y=p.Y<.1f?-10:.05f;
         if(round==11&&game.Find("lazy_susan_00") is {} susan&&MathF.Sqrt(MathF.Pow(susan.Position.X-p.X,2)+MathF.Pow(susan.Position.Z-z,2))<3)y+=.17f;
         shadow.Position=new(p.X,y,z);float size=p.Y<0?.1f:.1f+p.Y*.02f;if(Math.Abs(p.X)>4.2f||Math.Abs(z)>4)size=0;shadow.Scale=new(size,shadow.Scale.Y,size);
     }

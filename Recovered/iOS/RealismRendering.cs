@@ -11,6 +11,10 @@ static class RealismRendering
         get => NSUserDefaults.StandardUserDefaults.StringForKey("realism.quality") ?? "auto";
         set => NSUserDefaults.StandardUserDefaults.SetString(value, "realism.quality");
     }
+    public static bool LampEnabled {
+        get => NSUserDefaults.StandardUserDefaults["realism.lamp"] == null || NSUserDefaults.StandardUserDefaults.BoolForKey("realism.lamp");
+        set => NSUserDefaults.StandardUserDefaults.SetBool(value,"realism.lamp");
+    }
     public static bool Enhanced => Quality == "enhanced" || (Quality == "auto" &&
         NSProcessInfo.ProcessInfo.PhysicalMemory >= 4UL * 1024 * 1024 * 1024 &&
         !NSProcessInfo.ProcessInfo.LowPowerModeEnabled);
@@ -46,12 +50,13 @@ public sealed partial class LegacyScene
         var environment = Texture("studio-environment");
         // Recovered fixed-function lights overpower energy-conserving materials.
         void Balance(SCNNode node) {
-            if(node.Light is {} light) light.Intensity *= light.LightType == SCNLightType.Ambient ? .25f : .14f;
+            if(node.Light is {} light) light.Intensity *= light.LightType == SCNLightType.Ambient ? .25f : RealismRendering.LampEnabled ? .08f : .14f;
             foreach(var child in node.ChildNodes) Balance(child);
         }
         Balance(Scene.RootNode);
         Scene.LightingEnvironment.Contents = environment;
-        Scene.LightingEnvironment.Intensity = .8f;
+        Scene.LightingEnvironment.Intensity = RealismRendering.LampEnabled ? .45f : .8f;
+        using var props=System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(NSBundle.MainBundle.ResourcePath!,"Realism","prop-materials.json")));
         var definitions = assets.Read("scene.json").GetProperty("materials");
         foreach (var (key, material) in materials)
         {
@@ -60,45 +65,27 @@ public sealed partial class LegacyScene
             {
                 case "quarter00":
                     Physical(material, .85f, .36f);
-                    material.Diffuse.Intensity = .7f;
-                    material.Roughness.Contents = Texture("metal-roughness");
+                    material.Diffuse.Contents = Texture("quarter-albedo");
+                    material.Diffuse.Intensity = .8f;
+                    material.Normal.Contents = Texture("quarter-normal");
+                    material.Normal.Intensity = .25f;
+                    material.Roughness.Contents = Texture("quarter-roughness");
                     break;
                 case "table_00":
                     Physical(material, 0, .6f);
-                    material.Normal.Contents = Texture("wood-normal");
-                    material.Normal.Intensity = .45f;
-                    material.Roughness.Contents = Texture("wood-roughness");
+                    material.Diffuse.Contents = Texture("table-albedo");
+                    material.AmbientOcclusion.Contents = UIColor.White;
+                    material.Normal.Contents = Texture("table-normal");
+                    material.Normal.Intensity = .3f;
+                    material.Roughness.Contents = Texture("table-roughness");
                     break;
-                case "defl_cellphone01":
-                case "pendulum_00":
-                    Physical(material, .35f, .32f);
-                    break;
-                case "check_holder_00":
-                case "bobble_00":
-                case "hula_00":
-                case "biplane_00":
-                case "deflanim_bird01":
-                    Physical(material, 0, .62f);
-                    break;
-                case "shotglass_00":
-                    // Keep the authored alpha silhouettes: these legacy meshes are
-                    // not closed glass volumes and cannot produce real refraction.
-                    material.LightingModelName = SCNLightingModel.Blinn;
-                    material.LitPerPixel = true;
-                    material.ShaderModifiers = null;
-                    material.ShaderModifiers = new SCNShaderModifiers {
-                        EntryPointSurface = "_surface.emission.rgb = _surface.diffuse.rgb * 0.4;"
-                    };
-                    material.Specular.Contents = UIColor.FromWhiteAlpha(.45f, 1);
-                    material.Shininess = 90;
-                    material.Reflective.Contents = environment;
-                    material.Reflective.Intensity = .24f;
-                    material.FresnelExponent = 4;
-                    material.TransparencyMode = SCNTransparencyMode.AOne;
-                    material.WritesToDepthBuffer = false;
+                default:
+                    if(props.RootElement.TryGetProperty(name,out var profile)) ApplyPropMaterial(material,profile,Texture);
                     break;
             }
         }
+        ConfigureTableCoordinates();
+        AddRealismLamp();
     }
 
     static void Physical(SCNMaterial material, float metalness, float roughness)
